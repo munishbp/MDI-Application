@@ -39,11 +39,7 @@ Each node has a single responsibility:
 | `draft_clarification` | Writes targeted follow-up questions for incomplete tickets | `str` |
 | `assemble_output` | Packages all accumulated state into the final JSON structure | `TicketOutput` |
 
-### Why Claude Sonnet 4.6
-
-The assessment mentions evaluating cost efficiency. Sonnet 4.6 provides strong structured output and instruction-following at $3/$15 per million tokens — appropriate for a system making multiple calls per ticket at scale. Using an Opus-class model here would be overprovisioning for the task complexity.
-
-### Error Handling Philosophy
+### Error Handling
 
 The original version of this agent silently substituted defaults when parsing failed — `Unknown` category, `Medium` urgency — and kept going. The problem: a ticket that hits a parse error comes out the other end looking like a successfully processed ticket. In a triage system, a silently defaulted ticket is a lost ticket.
 
