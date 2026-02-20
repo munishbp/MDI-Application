@@ -6,13 +6,13 @@ An AI-powered support ticket triage system built for MDI's insurance software pl
 
 ### Why LangGraph Over a Single LLM Call
 
-A single prompt can classify, extract, and draft simultaneously. For many use cases that's the right choice — fewer API calls, lower latency, simpler code. I chose a multi-node graph for two reasons specific to this problem:
+A single prompt can classify, extract, and draft simultaneously. For many use cases that's the right choice: fewer API calls, lower latency, simpler code. I chose a multi-node graph for two reasons specific to this problem:
 
-1. **Conditional routing.** Not every ticket has enough information to respond to. Vague bug reports, incomplete descriptions, and ambiguous requests need follow-up questions — not guesses. This creates a genuine fork in the workflow: assess completeness, then branch. LangGraph's conditional edges express this cleanly. A linear pipeline or single prompt cannot route execution based on intermediate reasoning without external control flow bolted on after the fact.
+1. **Conditional routing.** Not every ticket has enough information to respond to. Vague bug reports, incomplete descriptions, and ambiguous requests need follow-up questions. This creates a fork in the workflow: assess completeness, then branch. LangGraph's conditional edges express this in a cleaner format. A linear pipeline or single prompt cannot route execution based on intermediate reasoning without external control flow bolted on after the fact.
 
 2. **Node-level debuggability.** In a production triage system, you need to know *where* the agent went wrong. Was the category correct but the urgency assessment off? Did entity extraction miss the client name? Isolated nodes with focused prompts make each step independently testable, loggable, and refinable. This matters when you're iterating on prompt quality across hundreds of real tickets.
 
-The tradeoff is latency (4-5 sequential API calls vs. 1) and cost. For a triage system where tickets arrive asynchronously and response time is measured in minutes, this is acceptable. For a real-time chatbot, it would not be.
+The tradeoff is latency (4-5 sequential API calls vs. 1) and cost. For a triage system where tickets arrive asynchronously and response time is not expected instantly, this is acceptable. For a real-time chatbot, it would not be.
 
 ### Graph Topology
 
@@ -41,7 +41,7 @@ Each node has a single responsibility:
 
 ### Error Handling
 
-The original version of this agent silently substituted defaults when parsing failed — `Unknown` category, `Medium` urgency — and kept going. The problem: a ticket that hits a parse error comes out the other end looking like a successfully processed ticket. In a triage system, a silently defaulted ticket is a lost ticket.
+The original version of this agent silently substituted defaults when parsing failed, `Unknown` category, `Medium` urgency, then kept going. The problem: a ticket that hits a parse error comes out the other end looking like a successfully processed ticket. In a triage system, a silently defaulted ticket is a lost ticket.
 
 The revised approach distinguishes two failure modes:
 
@@ -82,17 +82,17 @@ python main.py --file path/to/ticket.txt
 ## Test Cases
 
 ### Test 1: Billing Dispute
-A clear, well-documented billing discrepancy from an identified client with specific dollar amounts and account reference. Tests the agent's ability to classify accurately and draft a concrete response with next steps.
+A clear, well documented billing discrepancy from an identified client with specific dollar amounts and account reference. Tests the agent's ability to classify accurately and draft a concrete response with next steps.
 
 **Expected behavior:** Classified as `Billing`, marked complete, response drafted with acknowledgment and escalation path.
 
 ### Test 2: Vague Bug Report (Incomplete)
-An intentionally underspecified ticket — no client name, no module identified, no reproduction steps, no error details. Just "the system is acting weird."
+An intentionally underspecified ticket ie. no client name, no module identified, no reproduction steps, no error details. Just "the system is acting weird."
 
 **Expected behavior:** Classified as `Bug`, marked incomplete, clarification request drafted asking for specific module, reproduction steps, error messages, and browser/environment details.
 
 ### Test 3: System Incompatibility
-A well-documented compatibility issue between a browser update and a specific MDI module, with affected workstation count, OS version, and confirmed workaround (rollback). Tests the agent's handling of infrastructure-level issues that don't fit neatly into the standard Bug category.
+A well-documented compatibility issue between a browser update and a specific MDI module, with affected workstation count, OS version, and confirmed workaround (rollback). Tests the agent's handling of infrastructure level issues that don't fit neatly into the standard Bug category.
 
 **Expected behavior:** Classified as `System Incompatibility` or `Bug`, marked complete, response drafted acknowledging the Chrome 132 conflict and outlining investigation steps.
 
